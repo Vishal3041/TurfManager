@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import axios from "axios";
 import { API } from "@/App";
-import { Calendar, Clock, User, Phone, DollarSign, FileText, MapPin } from "lucide-react";
+import { Calendar, Clock, User, Phone, FileText, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -307,8 +307,8 @@ const AddEntrySheet = ({ open, onClose, date, turfs, editingEntry, onSuccess }) 
                   {/* Price Per Hour */}
                   <div>
                     <Label className="input-label flex items-center gap-2">
-                      <DollarSign className="w-4 h-4" />
-                      Price Per Hour ($)
+                      <span className="text-sm font-bold">₹</span>
+                      Price Per Hour (₹)
                     </Label>
                     <Input
                       className="input-field"
@@ -339,11 +339,11 @@ const AddEntrySheet = ({ open, onClose, date, turfs, editingEntry, onSuccess }) 
                       <div className="flex justify-between items-center mt-2 pt-2 border-t border-orange-200">
                         <span className="text-stone-800 font-semibold">Total Price</span>
                         <span className="text-xl font-bold text-orange-600" data-testid="total-price">
-                          ${(() => {
+                          ₹{(() => {
                             const start = parseInt(startTime.split(':')[0]) * 60 + parseInt(startTime.split(':')[1]);
                             const end = parseInt(endTime.split(':')[0]) * 60 + parseInt(endTime.split(':')[1]);
                             const hours = (end - start) / 60;
-                            return (hours * parseFloat(pricePerHour || 0)).toFixed(2);
+                            return (hours * parseFloat(pricePerHour || 0)).toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
                           })()}
                         </span>
                       </div>
@@ -355,8 +355,8 @@ const AddEntrySheet = ({ open, onClose, date, turfs, editingEntry, onSuccess }) 
                   {/* Expense Amount */}
                   <div>
                     <Label className="input-label flex items-center gap-2">
-                      <DollarSign className="w-4 h-4" />
-                      Amount ($)
+                      <span className="text-sm font-bold">₹</span>
+                      Amount (₹)
                     </Label>
                     <Input
                       className="input-field"

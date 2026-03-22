@@ -185,19 +185,19 @@ const Dashboard = () => {
           <div className="card-surface p-4 text-center">
             <p className="text-xs text-stone-500 uppercase tracking-wide mb-1">Income</p>
             <p className="font-heading text-xl md:text-2xl font-bold text-stone-900" data-testid="stat-income">
-              ${quickStats.income.toLocaleString()}
+              ₹{quickStats.income.toLocaleString('en-IN')}
             </p>
           </div>
           <div className="card-surface p-4 text-center">
             <p className="text-xs text-stone-500 uppercase tracking-wide mb-1">Expenses</p>
             <p className="font-heading text-xl md:text-2xl font-bold text-red-500" data-testid="stat-expenses">
-              ${quickStats.expenses.toLocaleString()}
+              ₹{quickStats.expenses.toLocaleString('en-IN')}
             </p>
           </div>
           <div className="card-surface p-4 text-center">
             <p className="text-xs text-stone-500 uppercase tracking-wide mb-1">Profit</p>
             <p className={`font-heading text-xl md:text-2xl font-bold ${quickStats.profit >= 0 ? 'text-green-600' : 'text-red-500'}`} data-testid="stat-profit">
-              ${quickStats.profit.toLocaleString()}
+              ₹{quickStats.profit.toLocaleString('en-IN')}
             </p>
           </div>
         </div>

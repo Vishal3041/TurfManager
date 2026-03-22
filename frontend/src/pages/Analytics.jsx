@@ -142,7 +142,7 @@ const Analytics = () => {
                   <span className="text-xs text-stone-500 uppercase">Income</span>
                 </div>
                 <p className="font-heading text-2xl font-bold text-stone-900" data-testid="analytics-income">
-                  ${stats?.total_income?.toLocaleString() || 0}
+                  ₹{stats?.total_income?.toLocaleString('en-IN') || 0}
                 </p>
                 <p className="text-xs text-stone-500 mt-1">
                   {stats?.booking_count || 0} bookings
@@ -157,7 +157,7 @@ const Analytics = () => {
                   <span className="text-xs text-stone-500 uppercase">Expenses</span>
                 </div>
                 <p className="font-heading text-2xl font-bold text-red-500" data-testid="analytics-expenses">
-                  ${stats?.total_expenses?.toLocaleString() || 0}
+                  ₹{stats?.total_expenses?.toLocaleString('en-IN') || 0}
                 </p>
                 <p className="text-xs text-stone-500 mt-1">
                   {stats?.expense_count || 0} entries
@@ -176,7 +176,7 @@ const Analytics = () => {
                   <span className="text-xs text-stone-500 uppercase">Profit</span>
                 </div>
                 <p className={`font-heading text-2xl font-bold ${stats?.profit >= 0 ? 'text-green-600' : 'text-red-500'}`} data-testid="analytics-profit">
-                  ${stats?.profit?.toLocaleString() || 0}
+                  ₹{stats?.profit?.toLocaleString('en-IN') || 0}
                 </p>
                 <p className="text-xs text-stone-500 mt-1">
                   {profitMargin}% margin
@@ -218,7 +218,7 @@ const Analytics = () => {
                       <YAxis 
                         tick={{ fill: '#57534e', fontSize: 12 }}
                         axisLine={{ stroke: '#e5e5e5' }}
-                        tickFormatter={(value) => `$${value}`}
+                        tickFormatter={(value) => `₹${value.toLocaleString('en-IN')}`}
                       />
                       <Tooltip 
                         contentStyle={{ 
@@ -227,7 +227,7 @@ const Analytics = () => {
                           borderRadius: '12px',
                           boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                         }}
-                        formatter={(value) => [`$${value}`, '']}
+                        formatter={(value) => [`₹${value.toLocaleString('en-IN')}`, '']}
                       />
                       <Bar dataKey="income" fill="#1A1A1A" radius={[4, 4, 0, 0]} name="Income" />
                       <Bar dataKey="expense" fill="#EF4444" radius={[4, 4, 0, 0]} name="Expenses" />
@@ -263,7 +263,7 @@ const Analytics = () => {
                           ))}
                         </Pie>
                         <Tooltip 
-                          formatter={(value) => [`$${value}`, '']}
+                          formatter={(value) => [`₹${value.toLocaleString('en-IN')}`, '']}
                           contentStyle={{ 
                             backgroundColor: '#fff', 
                             border: '1px solid #e5e5e5',

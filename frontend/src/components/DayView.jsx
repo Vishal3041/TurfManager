@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import axios from "axios";
 import { API } from "@/App";
-import { X, Plus, Clock, User, Phone, DollarSign, Edit2, Trash2, MapPin } from "lucide-react";
+import { X, Plus, Clock, User, Phone, Edit2, Trash2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -197,8 +197,8 @@ const DayView = ({ open, onClose, date, turfs, selectedTurf: initialTurf, onAddE
                                   {booking.phone_number}
                                 </div>
                                 <div className="flex items-center gap-2 text-green-600 font-semibold mt-1">
-                                  <DollarSign className="w-4 h-4" />
-                                  ${booking.total_price}
+                                  <span className="text-sm">₹</span>
+                                  {booking.total_price.toLocaleString('en-IN')}
                                 </div>
                               </div>
                               <div className="flex gap-1">
@@ -280,7 +280,7 @@ const DayView = ({ open, onClose, date, turfs, selectedTurf: initialTurf, onAddE
                             <div>
                               <p className="text-stone-800 font-medium">{expense.description}</p>
                               <p className="text-red-600 font-semibold mt-1">
-                                -${expense.amount}
+                                -₹{expense.amount.toLocaleString('en-IN')}
                               </p>
                             </div>
                             <div className="flex gap-1">
