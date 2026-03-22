@@ -1,6 +1,6 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/App";
-import { Calendar, BarChart3, LogOut, User } from "lucide-react";
+import { Calendar, BarChart3, LogOut, User, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -19,6 +19,7 @@ const Layout = ({ children }) => {
   const navItems = [
     { path: "/", icon: Calendar, label: "Calendar" },
     { path: "/analytics", icon: BarChart3, label: "Analytics" },
+    { path: "/activity", icon: History, label: "Activity" },
   ];
 
   const handleLogout = async () => {

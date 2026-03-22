@@ -115,6 +115,93 @@ class ExpenseUpdate(BaseModel):
     amount: Optional[float] = None
     description: Optional[str] = None
 
+# ==================== ACTIVITY LOG MODEL ====================
+
+class ActivityLog(BaseModel):
+    log_id: str
+    action: str  # create, update, delete
+    entity_type: str  # booking, expense
+    entity_id: str
+    user_email: str
+    user_name: str
+    timestamp: datetime
+    # For bookings
+    booking_data: Optional[dict] = None
+    # For expenses
+    expense_data: Optional[dict] = None
+    # For updates - stores old values
+    old_values: Optional[dict] = None
+    # For updates - stores new values
+    new_values: Optional[dict] = None
+
+# ==================== ACTIVITY LOGGING HELPERS ====================
+
+async def log_activity(
+    action: str,
+    entity_type: str,
+    entity_id: str,
+    user: User,
+    current_data: dict = None,
+    old_data: dict = None,
+    new_data: dict = None
+):
+    """Create an immutable activity log entry"""
+    log_doc = {
+        "log_id": f"log_{uuid.uuid4().hex[:12]}",
+        "action": action,
+        "entity_type": entity_type,
+        "entity_id": entity_id,
+        "user_email": user.email,
+        "user_name": user.name,
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
+    
+    if entity_type == "booking":
+        if current_data:
+            # Calculate duration
+            start_minutes = int(current_data.get("start_time", "00:00").split(':')[0]) * 60 + int(current_data.get("start_time", "00:00").split(':')[1])
+            end_minutes = int(current_data.get("end_time", "00:00").split(':')[0]) * 60 + int(current_data.get("end_time", "00:00").split(':')[1])
+            duration_hours = (end_minutes - start_minutes) / 60
+            
+            log_doc["booking_data"] = {
+                "turf_name": current_data.get("turf_name"),
+                "date": current_data.get("date"),
+                "start_time": current_data.get("start_time"),
+                "end_time": current_data.get("end_time"),
+                "duration_hours": duration_hours,
+                "price_per_hour": current_data.get("price_per_hour"),
+                "total_price": current_data.get("total_price"),
+                "customer_name": current_data.get("customer_name"),
+                "phone_number": current_data.get("phone_number")
+            }
+    elif entity_type == "expense":
+        if current_data:
+            log_doc["expense_data"] = {
+                "turf_name": current_data.get("turf_name"),
+                "date": current_data.get("date"),
+                "amount": current_data.get("amount"),
+                "description": current_data.get("description")
+            }
+    
+    # For updates, store old and new values
+    if action == "update" and old_data and new_data:
+        changes_old = {}
+        changes_new = {}
+        
+        # Compare and store only changed fields
+        for key in new_data.keys():
+            if key in old_data and old_data.get(key) != new_data.get(key):
+                changes_old[key] = old_data.get(key)
+                changes_new[key] = new_data.get(key)
+        
+        if changes_old:
+            log_doc["old_values"] = changes_old
+            log_doc["new_values"] = changes_new
+    
+    # Insert log (immutable - never updated or deleted)
+    await db.activity_logs.insert_one(log_doc)
+    logger.info(f"Activity logged: {action} {entity_type} {entity_id} by {user.email}")
+
 # ==================== AUTH HELPERS ====================
 
 async def get_current_user(request: Request) -> User:
@@ -450,6 +537,16 @@ async def create_booking(booking_data: BookingCreate, user: User = Depends(get_c
     }
     
     await db.bookings.insert_one(booking_doc)
+    
+    # Log activity
+    await log_activity(
+        action="create",
+        entity_type="booking",
+        entity_id=booking_doc["booking_id"],
+        user=user,
+        current_data=booking_doc
+    )
+    
     booking_doc["created_at"] = datetime.fromisoformat(booking_doc["created_at"])
     booking_doc["updated_at"] = datetime.fromisoformat(booking_doc["updated_at"])
     return Booking(**booking_doc)
@@ -521,6 +618,18 @@ async def update_booking(booking_id: str, booking_data: BookingUpdate, user: Use
     await db.bookings.update_one({"booking_id": booking_id}, {"$set": update_fields})
     
     updated = await db.bookings.find_one({"booking_id": booking_id}, {"_id": 0})
+    
+    # Log activity with old and new values
+    await log_activity(
+        action="update",
+        entity_type="booking",
+        entity_id=booking_id,
+        user=user,
+        current_data=updated,
+        old_data=existing,
+        new_data=updated
+    )
+    
     if isinstance(updated.get("created_at"), str):
         updated["created_at"] = datetime.fromisoformat(updated["created_at"])
     if isinstance(updated.get("updated_at"), str):
@@ -530,9 +639,24 @@ async def update_booking(booking_id: str, booking_data: BookingUpdate, user: Use
 @api_router.delete("/bookings/{booking_id}")
 async def delete_booking(booking_id: str, user: User = Depends(get_current_user)):
     """Delete a booking"""
+    # Get booking data before deleting for logging
+    existing = await db.bookings.find_one({"booking_id": booking_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Booking not found")
+    
     result = await db.bookings.delete_one({"booking_id": booking_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Booking not found")
+    
+    # Log activity
+    await log_activity(
+        action="delete",
+        entity_type="booking",
+        entity_id=booking_id,
+        user=user,
+        current_data=existing
+    )
+    
     return {"message": "Booking deleted successfully"}
 
 # ==================== EXPENSE ENDPOINTS ====================
@@ -586,6 +710,16 @@ async def create_expense(expense_data: ExpenseCreate, user: User = Depends(get_c
     }
     
     await db.expenses.insert_one(expense_doc)
+    
+    # Log activity
+    await log_activity(
+        action="create",
+        entity_type="expense",
+        entity_id=expense_doc["expense_id"],
+        user=user,
+        current_data=expense_doc
+    )
+    
     expense_doc["created_at"] = datetime.fromisoformat(expense_doc["created_at"])
     expense_doc["updated_at"] = datetime.fromisoformat(expense_doc["updated_at"])
     return Expense(**expense_doc)
@@ -616,6 +750,18 @@ async def update_expense(expense_id: str, expense_data: ExpenseUpdate, user: Use
     await db.expenses.update_one({"expense_id": expense_id}, {"$set": update_fields})
     
     updated = await db.expenses.find_one({"expense_id": expense_id}, {"_id": 0})
+    
+    # Log activity with old and new values
+    await log_activity(
+        action="update",
+        entity_type="expense",
+        entity_id=expense_id,
+        user=user,
+        current_data=updated,
+        old_data=existing,
+        new_data=updated
+    )
+    
     if isinstance(updated.get("created_at"), str):
         updated["created_at"] = datetime.fromisoformat(updated["created_at"])
     if isinstance(updated.get("updated_at"), str):
@@ -625,9 +771,24 @@ async def update_expense(expense_id: str, expense_data: ExpenseUpdate, user: Use
 @api_router.delete("/expenses/{expense_id}")
 async def delete_expense(expense_id: str, user: User = Depends(get_current_user)):
     """Delete an expense"""
+    # Get expense data before deleting for logging
+    existing = await db.expenses.find_one({"expense_id": expense_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    
     result = await db.expenses.delete_one({"expense_id": expense_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Expense not found")
+    
+    # Log activity
+    await log_activity(
+        action="delete",
+        entity_type="expense",
+        entity_id=expense_id,
+        user=user,
+        current_data=existing
+    )
+    
     return {"message": "Expense deleted successfully"}
 
 # ==================== DASHBOARD ENDPOINTS ====================
@@ -811,6 +972,55 @@ async def get_available_slots(
         "slots": available_slots,
         "bookings": bookings
     }
+
+# ==================== ACTIVITY LOGS ENDPOINTS ====================
+
+@api_router.get("/activity-logs")
+async def get_activity_logs(
+    limit: int = 50,
+    offset: int = 0,
+    entity_type: Optional[str] = None,  # booking, expense
+    action: Optional[str] = None,  # create, update, delete
+    user: User = Depends(get_current_user)
+):
+    """Get activity logs (immutable audit trail)"""
+    query = {}
+    
+    if entity_type:
+        query["entity_type"] = entity_type
+    if action:
+        query["action"] = action
+    
+    # Get total count
+    total_count = await db.activity_logs.count_documents(query)
+    
+    # Get logs sorted by timestamp descending (newest first)
+    logs = await db.activity_logs.find(query, {"_id": 0}).sort("timestamp", -1).skip(offset).limit(limit).to_list(limit)
+    
+    # Convert timestamp strings to datetime for response
+    for log in logs:
+        if isinstance(log.get("timestamp"), str):
+            log["timestamp"] = datetime.fromisoformat(log["timestamp"])
+    
+    return {
+        "logs": logs,
+        "total": total_count,
+        "limit": limit,
+        "offset": offset
+    }
+
+@api_router.get("/activity-logs/{log_id}")
+async def get_activity_log_detail(log_id: str, user: User = Depends(get_current_user)):
+    """Get a single activity log entry"""
+    log = await db.activity_logs.find_one({"log_id": log_id}, {"_id": 0})
+    
+    if not log:
+        raise HTTPException(status_code=404, detail="Activity log not found")
+    
+    if isinstance(log.get("timestamp"), str):
+        log["timestamp"] = datetime.fromisoformat(log["timestamp"])
+    
+    return log
 
 # ==================== ROOT ====================
 
