@@ -1,0 +1,178 @@
+{
+  "identity": {
+    "persona": "E1 - The Anti-AI Designer",
+    "mission": "Create a 'Warm Productivity' aesthetic that defies the clinical 'SaaS Blue' standard. Use 'Sunlit Turf' energy (Orange/Cream) to make management feel active and physical.",
+    "principles": [
+      "Fusion: Mix 'Sports Locker Room' durability with 'Swiss Hotel' minimalism.",
+      "Emotion: Reliability meets Energy. The app should feel like a fresh morning on the field.",
+      "Content: Data is the hero. Numbers must be big, legible, and confident.",
+      "Negative Space: Use 'Cream' space to let the 'Orange' action buttons breathe.",
+      "Contrast: High contrast text (Charcoal) on soft backgrounds (Cream)."
+    ]
+  },
+  "typography": {
+    "fonts": {
+      "heading": {
+        "family": "Barlow Condensed, sans-serif",
+        "weights": ["600", "700"],
+        "usage": "Page titles, big stats, card headers. Sporty and vertical.",
+        "cdn_import": "@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600&display=swap');"
+      },
+      "body": {
+        "family": "Inter, sans-serif",
+        "weights": ["400", "500", "600"],
+        "usage": "Standard text, form labels, list items. Clean and legible."
+      }
+    },
+    "scale": {
+      "h1": "text-4xl md:text-5xl font-bold tracking-tight uppercase",
+      "h2": "text-2xl md:text-3xl font-semibold tracking-tight",
+      "h3": "text-xl font-medium text-stone-800",
+      "body": "text-base text-stone-600 leading-relaxed",
+      "caption": "text-sm text-stone-500 uppercase tracking-widest"
+    }
+  },
+  "colors": {
+    "palette": {
+      "primary": {
+        "DEFAULT": "#F97316",
+        "foreground": "#FFFFFF",
+        "hover": "#EA580C",
+        "active": "#C2410C",
+        "description": "Tailwind Orange-500. Use for Main Actions (Add Booking, Save), Active States, and Brand Highlights."
+      },
+      "secondary": {
+        "DEFAULT": "#F5F5F4",
+        "foreground": "#1C1917",
+        "description": "Stone-100. Use for secondary buttons, tags, and inactive states."
+      },
+      "accent": {
+        "DEFAULT": "#FFF7ED",
+        "foreground": "#F97316",
+        "description": "Orange-50. Use for active nav items, selected calendar days (background)."
+      },
+      "background": {
+        "DEFAULT": "#FDFBF7",
+        "alt": "#FFFFFF",
+        "description": "Warm Cream / Off-White. Avoid pure #FFFFFF for the main background. Use #FFFFFF for Cards."
+      },
+      "text": {
+        "primary": "#1A1A1A",
+        "secondary": "#57534E",
+        "muted": "#A8A29E"
+      },
+      "border": "#E7E5E4",
+      "functional": {
+        "success": "#10B981",
+        "error": "#EF4444",
+        "warning": "#F59E0B",
+        "info": "#3B82F6"
+      },
+      "chart": {
+        "income": "#1A1A1A",
+        "expense": "#EF4444",
+        "profit": "#F97316",
+        "neutral": "#E5E5E5"
+      }
+    },
+    "rules": [
+      "NO Blue/Green branding. Use Orange for brand identity.",
+      "Background must be warm (Cream/Stone), not sterile blue-white.",
+      "Gradients: Use subtle 'Orange-to-Yellow' fade ONLY on the primary action button. Keep everything else flat.",
+      "Text Contrast: Always use #1A1A1A for main text, never pure black."
+    ]
+  },
+  "layout": {
+    "spacing_scale": "Generous. Mobile: p-4/p-6. Desktop: p-8/p-12.",
+    "container_style": "max-w-md mx-auto md:max-w-5xl",
+    "grid_system": {
+      "dashboard": {
+        "mobile": "grid-cols-1 gap-4",
+        "desktop": "grid-cols-4 gap-6",
+        "pattern": "Bento Grid: Hero Stat (span-2), Quick List (span-2), Actions (span-1)."
+      }
+    },
+    "surface_styles": {
+      "card": "bg-white border border-stone-200 shadow-[0_2px_8px_rgba(0,0,0,0.04)] rounded-2xl",
+      "card_hover": "hover:shadow-[0_4px_12px_rgba(249,115,22,0.1)] hover:border-orange-200 transition-all duration-300",
+      "glass": "bg-white/80 backdrop-blur-md border-b border-stone-200/50"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl h-12 px-6 shadow-md shadow-orange-500/20 active:scale-95 transition-transform",
+      "secondary": "bg-stone-100 hover:bg-stone-200 text-stone-800 font-semibold rounded-xl h-12 px-6",
+      "ghost": "bg-transparent hover:bg-orange-50 text-orange-600 font-medium rounded-lg h-10 px-4",
+      "fab": "fixed bottom-6 right-6 h-14 w-14 rounded-full bg-orange-500 text-white shadow-lg shadow-orange-500/30 flex items-center justify-center z-50 md:hidden"
+    },
+    "inputs": {
+      "default": "h-12 bg-stone-50 border-stone-200 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 rounded-xl text-lg",
+      "label": "text-sm font-semibold text-stone-700 uppercase tracking-wide mb-1.5"
+    },
+    "calendar": {
+      "wrapper": "bg-white rounded-2xl p-4 shadow-sm border border-stone-100",
+      "day_selected": "bg-orange-500 text-white hover:bg-orange-600 rounded-full",
+      "day_today": "text-orange-600 font-bold bg-orange-50 rounded-full"
+    },
+    "navigation": {
+      "mobile_bottom_bar": "fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-stone-200 flex justify-around items-center z-40",
+      "desktop_top_bar": "h-16 bg-white/80 backdrop-blur border-b border-stone-200 flex items-center px-8 justify-between"
+    }
+  },
+  "images": {
+    "login_bg": {
+      "url": "https://images.unsplash.com/photo-1634401159080-0b0535ac131a?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "desc": "Aerial Soccer Field. Use with 'bg-orange-900/80' overlay for contrast.",
+      "category": "background"
+    },
+    "texture_overlay": {
+      "url": "https://images.pexels.com/photos/54567/pexels-photo-54567.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "desc": "White line on turf. Use as subtle texture in sidebar or cards (opacity 5%).",
+      "category": "texture"
+    },
+    "dashboard_hero": {
+      "url": "https://images.pexels.com/photos/36386778/pexels-photo-36386778.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "desc": "Turf Detail. Use for 'Premium' card backgrounds.",
+      "category": "hero"
+    }
+  },
+  "accessibility": {
+    "rules": [
+      "Orange text on White must be bold/large enough (Ratio 3:1+).",
+      "Interactive elements min-height: 48px (Touch Target).",
+      "Focus rings must be visible (Orange-300).",
+      "All icons must have aria-labels."
+    ]
+  },
+  "instructions_to_main_agent": {
+    "setup": [
+      "Override '/app/frontend/src/index.css' variables with the 'colors.palette' values.",
+      "Install 'Barlow Condensed' via Google Fonts import in index.css.",
+      "Create a 'Layout' component that handles the Mobile Bottom Bar / Desktop Top Bar logic."
+    ],
+    "implementation_tips": [
+      "For the Calendar: Use the 'react-day-picker' (Shadcn default) but override the styles to match the Orange theme.",
+      "For the Add Booking Form: Use a 'Drawer' (Sheet) on mobile and a 'Dialog' (Modal) on desktop.",
+      "For Charts: Use 'Recharts' with custom colors (Orange for Profit, Black for Income, Red for Expense).",
+      "Google Login: Mock it if SDK not available, but UI should show 'Sign in with Google' button (White button, Google Icon, Border)."
+    ],
+    "critical_constraints": [
+      "DO NOT use Green for buttons or backgrounds.",
+      "DO NOT use Blue for links (Use Orange or Dark Grey).",
+      "Keep the UI 'Flat' with subtle shadows. No heavy bevels or gradients."
+    ]
+  },
+  "universal_guidelines": {
+    "design": [
+      "Avoid 'AI Slop' (Generic layouts). Use asymmetric grids where possible.",
+      "Buttons: Pill-shaped or Rounded-XL.",
+      "Shadows: Soft, warm, diffuse."
+    ],
+    "code": [
+      "Use 'sonner' for toasts.",
+      "Use 'lucide-react' for icons.",
+      "Use 'date-fns' for date manipulation.",
+      "Add 'data-testid' to all interactables."
+    ]
+  }
+}
