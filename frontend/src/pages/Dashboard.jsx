@@ -325,13 +325,13 @@ const Dashboard = () => {
         <button
           data-testid="fab-add-entry"
           onClick={() => handleAddEntry()}
-          className="fixed bottom-20 right-4 h-14 w-14 rounded-full bg-orange-500 text-white shadow-lg shadow-orange-500/30 flex items-center justify-center z-40 md:hidden active:scale-95 transition-transform"
+          className="fixed bottom-24 right-4 h-14 w-14 rounded-full bg-orange-500 text-white shadow-lg shadow-orange-500/30 flex items-center justify-center z-50 md:hidden active:scale-95 transition-transform"
         >
           <Plus className="w-6 h-6" />
         </button>
 
         {/* Desktop Add Button */}
-        <div className="hidden md:block fixed bottom-6 right-6">
+        <div className="hidden md:block fixed bottom-20 right-6 z-50">
           <Button
             data-testid="desktop-add-entry"
             onClick={() => handleAddEntry()}

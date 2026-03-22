@@ -115,7 +115,7 @@ const DayView = ({ open, onClose, date, turfs, selectedTurf: initialTurf, onAddE
       <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl p-0">
         <div className="flex flex-col h-full">
           {/* Header */}
-          <SheetHeader className="p-4 border-b border-stone-200">
+          <SheetHeader className="p-4 border-b border-stone-200 flex-shrink-0">
             <div className="flex items-center justify-between">
               <SheetTitle className="font-heading text-xl font-semibold text-stone-900">
                 {format(date, "EEEE, MMMM d")}
@@ -151,7 +151,7 @@ const DayView = ({ open, onClose, date, turfs, selectedTurf: initialTurf, onAddE
           </SheetHeader>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 overflow-y-auto p-4 pb-24">
             {loading ? (
               <div className="flex items-center justify-center h-40">
                 <div className="spinner" />

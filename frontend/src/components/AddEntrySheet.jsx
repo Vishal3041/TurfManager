@@ -154,15 +154,14 @@ const AddEntrySheet = ({ open, onClose, date, turfs, editingEntry, onSuccess }) 
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
-      <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl p-0">
-        <div className="flex flex-col h-full">
-          <SheetHeader className="p-4 border-b border-stone-200">
-            <SheetTitle className="font-heading text-xl font-semibold text-stone-900">
-              {editingEntry ? "Edit Entry" : "Add Entry"}
-            </SheetTitle>
-          </SheetHeader>
+      <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl p-0 flex flex-col">
+        <SheetHeader className="p-4 border-b border-stone-200 flex-shrink-0">
+          <SheetTitle className="font-heading text-xl font-semibold text-stone-900">
+            {editingEntry ? "Edit Entry" : "Add Entry"}
+          </SheetTitle>
+        </SheetHeader>
 
-          <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 pb-32">
             {/* Entry Type Toggle */}
             {!editingEntry && (
               <Tabs value={entryType} onValueChange={setEntryType} className="mb-6">
@@ -387,24 +386,25 @@ const AddEntrySheet = ({ open, onClose, date, turfs, editingEntry, onSuccess }) 
                 </>
               )}
 
-              {/* Submit Button */}
-              <div className="pt-4">
-                <Button
-                  type="submit"
-                  className="w-full btn-primary"
-                  disabled={loading}
-                  data-testid="submit-entry"
-                >
-                  {loading ? (
-                    <div className="spinner" />
-                  ) : (
-                    editingEntry ? "Update" : "Save"
-                  )}
-                </Button>
-              </div>
             </form>
           </div>
-        </div>
+
+          {/* Sticky Bottom Action Bar */}
+          <div className="flex-shrink-0 p-4 pt-3 pb-6 border-t border-stone-200 bg-white" style={{ marginBottom: '60px' }}>
+            <Button
+              type="button"
+              onClick={handleSubmit}
+              className="w-full btn-primary"
+              disabled={loading}
+              data-testid="submit-entry"
+            >
+              {loading ? (
+                <div className="spinner" />
+              ) : (
+                editingEntry ? "Update" : "Save"
+              )}
+            </Button>
+          </div>
       </SheetContent>
     </Sheet>
   );

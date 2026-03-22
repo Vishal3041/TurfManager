@@ -155,3 +155,25 @@ code {
 .pb-safe {
     padding-bottom: env(safe-area-inset-bottom, 16px);
 }
+
+/* Safe area for bottom action bars */
+.safe-area-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom, 16px), 24px);
+}
+
+/* Ensure sheets have proper spacing for the Emergent badge */
+[data-radix-popper-content-wrapper] {
+    z-index: 100 !important;
+}
+
+/* Sheet content with sticky footer support */
+.sheet-with-sticky-footer {
+    display: flex;
+    flex-direction: column;
+}
+
+.sheet-with-sticky-footer > .sheet-scrollable {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: 100px;
+}

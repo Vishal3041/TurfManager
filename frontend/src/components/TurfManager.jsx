@@ -67,7 +67,7 @@ const TurfManager = ({ open, onClose, turfs, onRefresh }) => {
       <Sheet open={open} onOpenChange={onClose}>
         <SheetContent side="right" className="w-full sm:max-w-md p-0">
           <div className="flex flex-col h-full">
-            <SheetHeader className="p-4 border-b border-stone-200">
+            <SheetHeader className="p-4 border-b border-stone-200 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <SheetTitle className="font-heading text-xl font-semibold text-stone-900">
                   Manage Turfs
@@ -83,7 +83,7 @@ const TurfManager = ({ open, onClose, turfs, onRefresh }) => {
               </div>
             </SheetHeader>
 
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 pb-24">
               {turfs.length === 0 ? (
                 <div className="text-center py-12">
                   <MapPin className="w-12 h-12 text-stone-300 mx-auto mb-3" />
