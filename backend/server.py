@@ -430,8 +430,9 @@ async def create_session(request: Request, response: Response):
         key="session_token",
         value=session_token,
         httponly=True,
-        secure=False,      # 🔥 LOCAL FIX
-        samesite="lax",    # 🔥 LOCAL FIX
+        secure=True,
+        samesite="none",
+        domain=".onrender.com",
         path="/"
     )
 

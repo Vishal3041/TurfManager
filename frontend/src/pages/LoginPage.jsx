@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/App";
 import { Button } from "@/components/ui/button";
 import { GoogleLogin } from "@react-oauth/google";
 import axios from "axios";
+import { API, useAuth } from "@/App";
 
 const LoginPage = () => {
   const { user, loading } = useAuth();
@@ -61,7 +61,7 @@ const LoginPage = () => {
 
                   // Step 1: verify + check authorization
                   const res = await axios.post(
-                    "https://turf-backend-tx2i.onrender.com/api/auth/google",
+                    `${API}/auth/google`,
                     { token }
                   );
 
@@ -72,13 +72,13 @@ const LoginPage = () => {
 
                   // Step 2: CREATE SESSION (🔥 missing piece)
                   await axios.post(
-                    "https://turf-backend-tx2i.onrender.com/api/auth/session",
+                    `${API}/auth/session`,
                     { token },
                     { withCredentials: true }
                   );
 
                   const me = await axios.get(
-                    "https://turf-backend-tx2i.onrender.com/api/auth/me",
+                    `${API}/auth/me`,
                     { withCredentials: true }
                   );
 
