@@ -77,6 +77,14 @@ const LoginPage = () => {
                     { withCredentials: true }
                   );
 
+                  const me = await axios.get(
+                    "https://turf-backend-tx2i.onrender.com/api/auth/me",
+                    { withCredentials: true }
+                  );
+
+                  // update context
+                  login(me.data);
+
                   navigate("/");
 
                 } catch (err) {

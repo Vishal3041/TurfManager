@@ -10,7 +10,6 @@ import Dashboard from "@/pages/Dashboard";
 import Analytics from "@/pages/Analytics";
 import Activity from "@/pages/Activity";
 import AccessDenied from "@/pages/AccessDenied";
-import AuthCallback from "@/pages/AuthCallback";
 
 const BACKEND_URL = "https://turf-backend-tx2i.onrender.com";
 export const API = `${BACKEND_URL}/api`;
@@ -31,13 +30,6 @@ const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   const checkAuth = useCallback(async () => {
-    // CRITICAL: If returning from OAuth callback, skip the /me check.
-    // AuthCallback will exchange the session_id and establish the session first.
-    if (window.location.hash?.includes('session_id=')) {
-      setLoading(false);
-      return;
-    }
-
     try {
       const response = await axios.get(`${API}/auth/me`, {
         withCredentials: true
@@ -87,13 +79,8 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  // Check if user is authorized
-  if (user.is_authorized === false) {
-    return <AccessDenied />;
+  if (!user || user.is_authorized === false) {
+    return <Navigate to="/login" replace />;
   }
 
   return children;
@@ -102,11 +89,6 @@ const ProtectedRoute = ({ children }) => {
 // App Router Component
 const AppRouter = () => {
   const location = useLocation();
-
-  // Check URL fragment for session_id synchronously during render
-  if (location.hash?.includes('session_id=')) {
-    return <AuthCallback />;
-  }
 
   return (
     <Routes>
