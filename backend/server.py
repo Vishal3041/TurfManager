@@ -351,17 +351,27 @@ async def create_session(request: Request, response: Response):
     if not session_id:
         raise HTTPException(status_code=400, detail="session_id required")
     
-    # Call Emergent Auth to get user data
-    async with httpx.AsyncClient() as client_http:
-        auth_response = await client_http.get(
-            "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
-            headers={"X-Session-ID": session_id}
+    token = body.get("token")
+
+    if not token:
+        raise HTTPException(status_code=400, detail="Token required")
+
+    try:
+        idinfo = id_token.verify_oauth2_token(
+            token,
+            grequests.Request(),
+            GOOGLE_CLIENT_ID
         )
-    
-    if auth_response.status_code != 200:
-        raise HTTPException(status_code=401, detail="Invalid session_id")
-    
-    auth_data = auth_response.json()
+
+        auth_data = {
+            "email": idinfo["email"],
+            "name": idinfo.get("name"),
+            "picture": idinfo.get("picture"),
+            "session_token": token
+        }
+
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid token")
     
     # Check if user exists, if not create
     user_doc = await db.users.find_one({"email": auth_data["email"]}, {"_id": 0})
