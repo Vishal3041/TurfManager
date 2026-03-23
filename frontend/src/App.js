@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, createContext, useContext } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -9,12 +9,27 @@ import LoginPage from "@/pages/LoginPage";
 import Dashboard from "@/pages/Dashboard";
 import Analytics from "@/pages/Analytics";
 import Activity from "@/pages/Activity";
-import AccessDenied from "@/pages/AccessDenied";
 
-const BACKEND_URL = "https://turf-backend-tx2i.onrender.com";
+// ================= API =================
+// Auto-detect environment: localhost or Codespaces
+const BACKEND_URL = 
+  window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:8000"
+    : "https://fuzzy-palm-tree-4qr4vxvqpgw3q54w-8000.app.github.dev";
+
 export const API = `${BACKEND_URL}/api`;
 
-// Auth Context
+// ================= AXIOS INTERCEPTOR =================
+// Automatically attach token to all requests
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// ================= AUTH CONTEXT =================
 const AuthContext = createContext(null);
 
 export const useAuth = () => {
@@ -25,17 +40,27 @@ export const useAuth = () => {
   return context;
 };
 
+// ================= AUTH PROVIDER =================
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const checkAuth = useCallback(async () => {
+    const token = localStorage.getItem("token");
+
+    // 🔥 If no token, skip API call
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await axios.get(`${API}/auth/me`, {
-        withCredentials: true
-      });
+      const response = await axios.get(`${API}/auth/me`);
       setUser(response.data);
     } catch (error) {
+      console.error("Auth check failed:", error);
+      localStorage.removeItem("token"); // cleanup invalid token
       setUser(null);
     } finally {
       setLoading(false);
@@ -52,10 +77,13 @@ const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await axios.post(`${API}/auth/logout`, {}, { withCredentials: true });
+      await axios.post(`${API}/auth/logout`);
     } catch (error) {
       console.error("Logout error:", error);
     }
+
+    // 🔥 Clear token always
+    localStorage.removeItem("token");
     setUser(null);
   };
 
@@ -66,10 +94,9 @@ const AuthProvider = ({ children }) => {
   );
 };
 
-// Protected Route Component
+// ================= PROTECTED ROUTE =================
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  const location = useLocation();
 
   if (loading) {
     return (
@@ -79,6 +106,7 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
+  // 🔥 Only allow valid authorized users
   if (!user || user.is_authorized === false) {
     return <Navigate to="/login" replace />;
   }
@@ -86,13 +114,12 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-// App Router Component
+// ================= ROUTER =================
 const AppRouter = () => {
-  const location = useLocation();
-
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+
       <Route
         path="/"
         element={
@@ -101,6 +128,7 @@ const AppRouter = () => {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/analytics"
         element={
@@ -109,6 +137,7 @@ const AppRouter = () => {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/activity"
         element={
@@ -117,11 +146,14 @@ const AppRouter = () => {
           </ProtectedRoute>
         }
       />
+
+      {/* fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };
 
+// ================= APP =================
 function App() {
   return (
     <div className="App">

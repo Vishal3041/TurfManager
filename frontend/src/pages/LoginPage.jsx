@@ -22,6 +22,7 @@ const LoginPage = () => {
       </div>
     );
   }
+  console.log("API URL:", `${API}/auth/google`);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -71,15 +72,18 @@ const LoginPage = () => {
                   }
 
                   // Step 2: CREATE SESSION (🔥 missing piece)
-                  await axios.post(
-                    `${API}/auth/session`,
-                    { token },
-                    { withCredentials: true }
-                  );
+                  const sessionRes = await axios.post(`${API}/auth/session`, { token });
+
+                  // 🔥 STORE TOKEN
+                  localStorage.setItem("token", sessionRes.data.session_token);
+
+                  // 🔥 SET USER
+                  login(sessionRes.data);
+
+                  navigate("/");
 
                   const me = await axios.get(
-                    `${API}/auth/me`,
-                    { withCredentials: true }
+                    `${API}/auth/me`
                   );
 
                   // update context

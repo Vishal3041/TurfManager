@@ -1,7 +1,7 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends
 from fastapi.responses import JSONResponse
 from dotenv import load_dotenv
-from starlette.middleware.cors import CORSMiddleware
+from fastapi.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -35,6 +35,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
+        "http://127.0.0.1:3000",
         "https://fuzzy-palm-tree-4qr4vxvqpgw3q54w-3000.app.github.dev"
     ],
     allow_credentials=True,   # 🔥 IMPORTANT
@@ -425,20 +426,10 @@ async def create_session(request: Request, response: Response):
         "created_at": datetime.now(timezone.utc).isoformat()
     })
 
-    # ✅ FIX COOKIE (IMPORTANT)
-    response.set_cookie(
-        key="session_token",
-        value=session_token,
-        httponly=True,
-        secure=True,
-        samesite="none",
-        domain=".onrender.com",
-        path="/"
-    )
-
     is_authorized = await is_email_authorized(email)
 
     return {
+        "session_token": session_token,
         "user_id": user_id,
         "email": email,
         "name": name,
@@ -1236,13 +1227,10 @@ async def root():
 # Include the router in the main app
 app.include_router(api_router)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+@app.get("/ping")
+async def ping():
+    print("🔥 PING HIT")
+    return {"message": "pong"}
 
 @app.on_event("startup")
 async def startup_event():
