@@ -31,6 +31,17 @@ INITIAL_AUTHORIZED_EMAILS = [
 # Create the main app
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://fuzzy-palm-tree-4qr4vxvqpgw3q54w-3000.app.github.dev"
+    ],
+    allow_credentials=True,   # 🔥 IMPORTANT
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
@@ -347,6 +358,7 @@ async def google_login(data: dict):
         name = idinfo.get("name", "")
 
         print("GOOGLE EMAIL:", email)
+        print("IS AUTHORIZED:", await is_email_authorized(email))
 
         # 🔥 IMPORTANT: check authorization
         is_authorized_user = await is_email_authorized(email)
@@ -363,13 +375,7 @@ async def google_login(data: dict):
 
 @api_router.post("/auth/session")
 async def create_session(request: Request, response: Response):
-    """Exchange session_id for session_token"""
     body = await request.json()
-    session_id = body.get("session_id")
-    
-    if not session_id:
-        raise HTTPException(status_code=400, detail="session_id required")
-    
     token = body.get("token")
 
     if not token:
@@ -378,79 +384,64 @@ async def create_session(request: Request, response: Response):
     try:
         idinfo = id_token.verify_oauth2_token(
             token,
-            grequests.Request(),
-            GOOGLE_CLIENT_ID
+            requests.Request(),
+            os.environ["GOOGLE_CLIENT_ID"]
         )
 
-        auth_data = {
-            "email": idinfo["email"],
-            "name": idinfo.get("name"),
-            "picture": idinfo.get("picture"),
-            "session_token": token
-        }
+        email = idinfo["email"]
+        name = idinfo.get("name")
+        picture = idinfo.get("picture")
 
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid token")
-    
-    # Check if user exists, if not create
-    user_doc = await db.users.find_one({"email": auth_data["email"]}, {"_id": 0})
-    
+
+    # Create / update user
+    user_doc = await db.users.find_one({"email": email}, {"_id": 0})
+
     if not user_doc:
         user_id = f"user_{uuid.uuid4().hex[:12]}"
         user_doc = {
             "user_id": user_id,
-            "email": auth_data["email"],
-            "name": auth_data["name"],
-            "picture": auth_data.get("picture"),
+            "email": email,
+            "name": name,
+            "picture": picture,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         await db.users.insert_one(user_doc)
     else:
         user_id = user_doc["user_id"]
-        # Update user info if changed
-        await db.users.update_one(
-            {"user_id": user_id},
-            {"$set": {
-                "name": auth_data["name"],
-                "picture": auth_data.get("picture")
-            }}
-        )
-    
-    # Create session
-    session_token = auth_data["session_token"]
+
+    # ✅ FIX: create real session token
+    session_token = f"sess_{uuid.uuid4().hex}"
+
     expires_at = datetime.now(timezone.utc) + timedelta(days=7)
-    
-    session_doc = {
+
+    await db.user_sessions.delete_many({"user_id": user_id})
+    await db.user_sessions.insert_one({
         "session_id": str(uuid.uuid4()),
         "user_id": user_id,
         "session_token": session_token,
         "expires_at": expires_at.isoformat(),
         "created_at": datetime.now(timezone.utc).isoformat()
-    }
-    
-    # Remove old sessions for this user
-    await db.user_sessions.delete_many({"user_id": user_id})
-    await db.user_sessions.insert_one(session_doc)
-    
-    # Set cookie
+    })
+
+    # ✅ FIX COOKIE (IMPORTANT)
     response.set_cookie(
         key="session_token",
         value=session_token,
         httponly=True,
-        secure=True,
-        samesite="none",
-        path="/",
-        max_age=7 * 24 * 60 * 60
+        secure=False,      # 🔥 LOCAL FIX
+        samesite="lax",    # 🔥 LOCAL FIX
+        path="/"
     )
-    
-    # Check if user is authorized
-    is_authorized = await is_email_authorized(auth_data["email"])
-    
+
+    is_authorized = await is_email_authorized(email)
+
     return {
         "user_id": user_id,
-        "email": auth_data["email"],
-        "name": auth_data["name"],
-        "picture": auth_data.get("picture"),
+        "email": email,
+        "name": name,
+        "picture": picture,
         "is_authorized": is_authorized
     }
 
