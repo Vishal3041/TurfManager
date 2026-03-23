@@ -12,7 +12,7 @@ import Activity from "@/pages/Activity";
 import AccessDenied from "@/pages/AccessDenied";
 import AuthCallback from "@/pages/AuthCallback";
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const BACKEND_URL = "https://turf-backend-tx2i.onrender.com/api";
 export const API = `${BACKEND_URL}/api`;
 
 // Auth Context
