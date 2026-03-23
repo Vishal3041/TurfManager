@@ -6,7 +6,7 @@ import axios from "axios";
 import { API, useAuth } from "@/App";
 
 const LoginPage = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, login } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -59,41 +59,24 @@ const LoginPage = () => {
               onSuccess={async (credentialResponse) => {
                 try {
                   const token = credentialResponse.credential;
-
-                  // Step 1: verify + check authorization
-                  const res = await axios.post(
-                    `${API}/auth/google`,
-                    { token }
-                  );
-
-                  if (!res.data.is_authorized) {
-                    alert("Access denied");
-                    return;
-                  }
-
-                  // Step 2: CREATE SESSION (🔥 missing piece)
+              
+                  // 🔥 ONLY THIS CALL (no /auth/google needed)
                   const sessionRes = await axios.post(`${API}/auth/session`, { token });
-
-                  // 🔥 STORE TOKEN
+              
+                  // store token
                   localStorage.setItem("token", sessionRes.data.session_token);
-
-                  // 🔥 SET USER
+              
+                  // set user
                   login(sessionRes.data);
-
+              
+                  // navigate once
                   navigate("/");
-
-                  const me = await axios.get(
-                    `${API}/auth/me`
-                  );
-
-                  // update context
-                  login(me.data);
-
-                  navigate("/");
-
+              
                 } catch (err) {
-                  console.error(err);
-                  alert("Access denied");
+                  console.error("LOGIN ERROR:", err);
+              
+                  // show REAL error instead of fake "Access denied"
+                  alert("Login failed. Check console.");
                 }
               }}
             />

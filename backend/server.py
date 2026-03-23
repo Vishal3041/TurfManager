@@ -35,8 +35,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "http://127.0.0.1:3000",
-        "https://fuzzy-palm-tree-4qr4vxvqpgw3q54w-3000.app.github.dev"
+        "https://turf-manager.vercel.app"
     ],
     allow_credentials=True,   # 🔥 IMPORTANT
     allow_methods=["*"],

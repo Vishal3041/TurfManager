@@ -15,7 +15,7 @@ import Activity from "@/pages/Activity";
 const BACKEND_URL = 
   window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
     ? "http://localhost:8000"
-    : "https://fuzzy-palm-tree-4qr4vxvqpgw3q54w-8000.app.github.dev";
+    : "https://turf-backend-tx2i.onrender.com";
 
 export const API = `${BACKEND_URL}/api`;
 
