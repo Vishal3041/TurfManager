@@ -83,7 +83,7 @@ const TurfManager = ({ open, onClose, turfs, onRefresh }) => {
               </div>
             </SheetHeader>
 
-            <div className="flex-1 overflow-y-auto p-4 pb-24">
+            <div className="flex-1 overflow-y-auto p-4 pb-32">
               {turfs.length === 0 ? (
                 <div className="text-center py-12">
                   <MapPin className="w-12 h-12 text-stone-300 mx-auto mb-3" />

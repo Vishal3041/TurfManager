@@ -173,7 +173,7 @@ const Activity = () => {
 
   return (
     <Layout>
-      <div className="p-4 md:p-6 pb-24 md:pb-6 max-w-4xl mx-auto">
+      <div className="p-4 md:p-6 pb-32 md:pb-28 max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <h1 className="font-heading text-3xl md:text-4xl font-bold text-stone-900 uppercase tracking-tight flex items-center gap-3">

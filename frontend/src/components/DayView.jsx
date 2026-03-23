@@ -151,7 +151,7 @@ const DayView = ({ open, onClose, date, turfs, selectedTurf: initialTurf, onAddE
           </SheetHeader>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4 pb-24">
+          <div className="flex-1 overflow-y-auto p-4 pb-32">
             {loading ? (
               <div className="flex items-center justify-center h-40">
                 <div className="spinner" />

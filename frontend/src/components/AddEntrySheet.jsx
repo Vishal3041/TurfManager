@@ -161,7 +161,7 @@ const AddEntrySheet = ({ open, onClose, date, turfs, editingEntry, onSuccess }) 
           </SheetTitle>
         </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto p-4 pb-32">
+        <div className="flex-1 overflow-y-auto p-4 pb-40">
             {/* Entry Type Toggle */}
             {!editingEntry && (
               <Tabs value={entryType} onValueChange={setEntryType} className="mb-6">

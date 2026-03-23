@@ -161,6 +161,17 @@ code {
     padding-bottom: max(env(safe-area-inset-bottom, 16px), 24px);
 }
 
+/* Global bottom spacing for Emergent badge - applies to all pages */
+.page-content {
+    padding-bottom: 80px !important;
+}
+
+@media (min-width: 768px) {
+    .page-content {
+        padding-bottom: 100px !important;
+    }
+}
+
 /* Ensure sheets have proper spacing for the Emergent badge */
 [data-radix-popper-content-wrapper] {
     z-index: 100 !important;
@@ -176,4 +187,26 @@ code {
     flex: 1;
     overflow-y: auto;
     padding-bottom: 100px;
+}
+
+/* FAB positioning above badge */
+.fab-container {
+    bottom: 100px !important;
+}
+
+@media (min-width: 768px) {
+    .fab-container {
+        bottom: 100px !important;
+    }
+}
+
+/* Activity and list containers bottom spacing */
+.list-container-safe {
+    padding-bottom: 100px;
+}
+
+/* Bottom navigation spacing */
+.bottom-nav-safe {
+    bottom: 0;
+    padding-bottom: env(safe-area-inset-bottom, 8px);
 }

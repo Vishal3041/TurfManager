@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 class TurfManagementAPITester:
     def __init__(self, base_url="https://turf-booking-hub-11.preview.emergentagent.com"):
         self.base_url = base_url
-        self.session_token = "test_session_1774220903369"  # From MongoDB setup
+        self.session_token = "test_session_1774221219261"  # For demo@turfmanager.com (authorized)
         self.tests_run = 0
         self.tests_passed = 0
         self.test_results = []
@@ -248,6 +248,88 @@ class TurfManagementAPITester:
         else:
             self.log_test("Available slots", False, f"Status: {response.status_code if hasattr(response, 'status_code') else response}")
 
+    def test_get_authorized_users(self):
+        """Test GET /api/users/authorized - returns list of authorized users"""
+        success, response = self.make_request('GET', 'users/authorized')
+        if success:
+            data = response.json()
+            success = "users" in data and isinstance(data["users"], list) and "total" in data
+            if success:
+                users = data["users"]
+                # Check if demo@turfmanager.com is in the list
+                demo_user_found = any(user.get("email") == "demo@turfmanager.com" for user in users)
+                success = demo_user_found
+                self.log_test("GET authorized users list", success, f"Found {len(users)} users, demo user found: {demo_user_found}")
+            else:
+                self.log_test("GET authorized users list", False, "Invalid response structure")
+        else:
+            self.log_test("GET authorized users list", False, f"Status: {response.status_code if hasattr(response, 'status_code') else response}")
+
+    def test_add_authorized_user(self):
+        """Test POST /api/users/authorized - adds new user"""
+        test_email = f"test.user.{int(datetime.now().timestamp())}@example.com"
+        user_data = {"email": test_email}
+        
+        success, response = self.make_request('POST', 'users/authorized', user_data)
+        if success:
+            data = response.json()
+            success = "message" in data and "email" in data and data["email"] == test_email
+            self.log_test("Add authorized user", success, f"Added user: {test_email}" if success else "Invalid response")
+            return test_email if success else None
+        else:
+            self.log_test("Add authorized user", False, f"Status: {response.status_code if hasattr(response, 'status_code') else response}")
+            return None
+
+    def test_remove_authorized_user(self, email):
+        """Test DELETE /api/users/authorized/{email} - removes user"""
+        if not email:
+            self.log_test("Remove authorized user", False, "No email provided")
+            return
+            
+        success, response = self.make_request('DELETE', f'users/authorized/{email}')
+        if success:
+            data = response.json()
+            success = "message" in data and "email" in data and data["email"] == email
+            self.log_test("Remove authorized user", success, f"Removed user: {email}" if success else "Invalid response")
+        else:
+            self.log_test("Remove authorized user", False, f"Status: {response.status_code if hasattr(response, 'status_code') else response}")
+
+    def test_unauthorized_access(self):
+        """Test access control - unauthorized users get 403 on protected endpoints"""
+        # Test with invalid token
+        original_token = self.session_token
+        self.session_token = "invalid_token_12345"
+        
+        success, response = self.make_request('GET', 'turfs', expected_status=401)
+        if success:
+            self.log_test("Unauthorized access control", True, "Correctly rejected invalid token with 401")
+        else:
+            self.log_test("Unauthorized access control", False, f"Expected 401, got: {response.status_code if hasattr(response, 'status_code') else response}")
+        
+        # Restore original token
+        self.session_token = original_token
+
+    def test_activity_logs(self):
+        """Test activity logging - all CRUD actions are logged"""
+        success, response = self.make_request('GET', 'activity-logs?limit=10')
+        if success:
+            data = response.json()
+            success = "logs" in data and isinstance(data["logs"], list) and "total" in data
+            if success:
+                logs = data["logs"]
+                # Check if logs have proper structure
+                if logs:
+                    log = logs[0]
+                    required_fields = ["log_id", "action", "entity_type", "user_email", "timestamp"]
+                    success = all(field in log for field in required_fields)
+                    self.log_test("Activity logs endpoint", success, f"Found {len(logs)} logs" if success else "Invalid log structure")
+                else:
+                    self.log_test("Activity logs endpoint", True, "No logs found (expected for new system)")
+            else:
+                self.log_test("Activity logs endpoint", False, "Invalid response structure")
+        else:
+            self.log_test("Activity logs endpoint", False, f"Status: {response.status_code if hasattr(response, 'status_code') else response}")
+
     def run_all_tests(self):
         """Run all API tests"""
         print("🚀 Starting Turf Management API Tests")
@@ -261,6 +343,18 @@ class TurfManagementAPITester:
 
         # Test root endpoint
         self.test_root_endpoint()
+
+        # Test access control
+        self.test_unauthorized_access()
+
+        # Test user management endpoints
+        self.test_get_authorized_users()
+        test_email = self.test_add_authorized_user()
+        if test_email:
+            self.test_remove_authorized_user(test_email)
+
+        # Test activity logging
+        self.test_activity_logs()
 
         # Test turfs endpoint and get default turf
         default_turf = self.test_turfs_endpoint()

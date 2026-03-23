@@ -138,7 +138,7 @@ const Layout = ({ children }) => {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-stone-200 flex justify-around items-center z-40 pb-safe">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-stone-200 flex justify-around items-center z-50 pb-safe">
         {navItems.map(item => {
           const isActive = location.pathname === item.path;
           return (
@@ -147,7 +147,7 @@ const Layout = ({ children }) => {
               data-testid={`mobile-nav-${item.label.toLowerCase()}`}
               onClick={() => navigate(item.path)}
               className={`
-                flex flex-col items-center justify-center gap-1 w-16 h-full
+                flex flex-col items-center justify-center gap-1 w-20 h-full
                 ${isActive ? 'text-orange-500' : 'text-stone-400'}
               `}
             >

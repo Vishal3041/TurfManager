@@ -9,6 +9,7 @@ import LoginPage from "@/pages/LoginPage";
 import Dashboard from "@/pages/Dashboard";
 import Analytics from "@/pages/Analytics";
 import Activity from "@/pages/Activity";
+import AccessDenied from "@/pages/AccessDenied";
 import AuthCallback from "@/pages/AuthCallback";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -88,6 +89,11 @@ const ProtectedRoute = ({ children }) => {
 
   if (!user) {
     return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  // Check if user is authorized
+  if (user.is_authorized === false) {
+    return <AccessDenied />;
   }
 
   return children;

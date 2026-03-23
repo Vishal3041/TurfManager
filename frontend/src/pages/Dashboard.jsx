@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth, API } from "@/App";
 import axios from "axios";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, parseISO } from "date-fns";
-import { Calendar, Plus, BarChart3, LogOut, ChevronLeft, ChevronRight, Settings } from "lucide-react";
+import { Calendar, Plus, BarChart3, LogOut, ChevronLeft, ChevronRight, Settings, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
@@ -12,6 +12,7 @@ import Layout from "@/components/Layout";
 import DayView from "@/components/DayView";
 import AddEntrySheet from "@/components/AddEntrySheet";
 import TurfManager from "@/components/TurfManager";
+import UserManagement from "@/components/UserManagement";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -25,6 +26,7 @@ const Dashboard = () => {
   const [showAddEntry, setShowAddEntry] = useState(false);
   const [showDayView, setShowDayView] = useState(false);
   const [showTurfManager, setShowTurfManager] = useState(false);
+  const [showUserManagement, setShowUserManagement] = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
   const [loading, setLoading] = useState(true);
   const [quickStats, setQuickStats] = useState({ income: 0, expenses: 0, profit: 0 });
@@ -158,7 +160,7 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="p-4 md:p-6 pb-24 md:pb-6 max-w-5xl mx-auto">
+      <div className="p-4 md:p-6 pb-32 md:pb-28 max-w-5xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -169,15 +171,28 @@ const Dashboard = () => {
               Welcome back, {user?.name?.split(' ')[0]}
             </p>
           </div>
-          <Button
-            data-testid="manage-turfs-btn"
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowTurfManager(true)}
-            className="text-stone-600 hover:text-orange-600"
-          >
-            <Settings className="w-5 h-5" />
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              data-testid="manage-users-btn"
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowUserManagement(true)}
+              className="text-stone-600 hover:text-orange-600"
+              title="Manage Users"
+            >
+              <Users className="w-5 h-5" />
+            </Button>
+            <Button
+              data-testid="manage-turfs-btn"
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowTurfManager(true)}
+              className="text-stone-600 hover:text-orange-600"
+              title="Manage Turfs"
+            >
+              <Settings className="w-5 h-5" />
+            </Button>
+          </div>
         </div>
 
         {/* Quick Stats */}
@@ -374,6 +389,12 @@ const Dashboard = () => {
         onClose={() => setShowTurfManager(false)}
         turfs={turfs}
         onRefresh={fetchTurfs}
+      />
+
+      {/* User Management */}
+      <UserManagement
+        open={showUserManagement}
+        onClose={() => setShowUserManagement(false)}
       />
     </Layout>
   );

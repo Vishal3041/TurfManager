@@ -20,6 +20,12 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
+# Initial authorized users (owners)
+INITIAL_AUTHORIZED_EMAILS = [
+    "vishaltripathi1497@gmail.com",
+    "amittripathi1497@gmail.com"
+]
+
 # Create the main app
 app = FastAPI()
 
@@ -114,6 +120,80 @@ class ExpenseUpdate(BaseModel):
     date: Optional[str] = None
     amount: Optional[float] = None
     description: Optional[str] = None
+
+# ==================== AUTHORIZED USER MODEL ====================
+
+class AuthorizedUser(BaseModel):
+    email: str
+    added_by: str
+    added_at: datetime
+
+class AddAuthorizedUserRequest(BaseModel):
+    email: str
+
+# ==================== AUTHORIZATION HELPERS ====================
+
+async def initialize_authorized_users():
+    """Initialize authorized users collection with default owners if empty"""
+    count = await db.authorized_users.count_documents({})
+    if count == 0:
+        for email in INITIAL_AUTHORIZED_EMAILS:
+            await db.authorized_users.insert_one({
+                "email": email.lower().strip(),
+                "added_by": "system",
+                "added_at": datetime.now(timezone.utc).isoformat()
+            })
+        logger.info(f"Initialized {len(INITIAL_AUTHORIZED_EMAILS)} authorized users")
+
+async def is_email_authorized(email: str) -> bool:
+    """Check if an email is in the authorized users list"""
+    normalized_email = email.lower().strip()
+    user = await db.authorized_users.find_one({"email": normalized_email}, {"_id": 0})
+    return user is not None
+
+async def get_authorized_user(request: Request) -> User:
+    """Get current user and verify they are authorized"""
+    session_token = request.cookies.get("session_token")
+    if not session_token:
+        auth_header = request.headers.get("Authorization")
+        if auth_header and auth_header.startswith("Bearer "):
+            session_token = auth_header.split(" ")[1]
+    
+    if not session_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    session_doc = await db.user_sessions.find_one(
+        {"session_token": session_token},
+        {"_id": 0}
+    )
+    
+    if not session_doc:
+        raise HTTPException(status_code=401, detail="Invalid session")
+    
+    expires_at = session_doc["expires_at"]
+    if isinstance(expires_at, str):
+        expires_at = datetime.fromisoformat(expires_at)
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    if expires_at < datetime.now(timezone.utc):
+        raise HTTPException(status_code=401, detail="Session expired")
+    
+    user_doc = await db.users.find_one(
+        {"user_id": session_doc["user_id"]},
+        {"_id": 0}
+    )
+    
+    if not user_doc:
+        raise HTTPException(status_code=401, detail="User not found")
+    
+    # Check if user is authorized
+    if not await is_email_authorized(user_doc["email"]):
+        raise HTTPException(status_code=403, detail="Access denied. Your email is not authorized.")
+    
+    if isinstance(user_doc.get("created_at"), str):
+        user_doc["created_at"] = datetime.fromisoformat(user_doc["created_at"])
+    
+    return User(**user_doc)
 
 # ==================== ACTIVITY LOG MODEL ====================
 
@@ -318,21 +398,36 @@ async def create_session(request: Request, response: Response):
         max_age=7 * 24 * 60 * 60
     )
     
+    # Check if user is authorized
+    is_authorized = await is_email_authorized(auth_data["email"])
+    
     return {
         "user_id": user_id,
         "email": auth_data["email"],
         "name": auth_data["name"],
-        "picture": auth_data.get("picture")
+        "picture": auth_data.get("picture"),
+        "is_authorized": is_authorized
     }
 
 @api_router.get("/auth/me")
 async def get_me(user: User = Depends(get_current_user)):
     """Get current authenticated user"""
+    is_authorized = await is_email_authorized(user.email)
     return {
         "user_id": user.user_id,
         "email": user.email,
         "name": user.name,
-        "picture": user.picture
+        "picture": user.picture,
+        "is_authorized": is_authorized
+    }
+
+@api_router.get("/auth/check-authorization")
+async def check_authorization(user: User = Depends(get_current_user)):
+    """Check if current user is authorized"""
+    is_authorized = await is_email_authorized(user.email)
+    return {
+        "email": user.email,
+        "is_authorized": is_authorized
     }
 
 @api_router.post("/auth/logout")
@@ -348,7 +443,7 @@ async def logout(request: Request, response: Response):
 # ==================== TURF ENDPOINTS ====================
 
 @api_router.get("/turfs", response_model=List[Turf])
-async def get_turfs(user: User = Depends(get_current_user)):
+async def get_turfs(user: User = Depends(get_authorized_user)):
     """Get all turfs"""
     turfs = await db.turfs.find({}, {"_id": 0}).to_list(100)
     
@@ -372,7 +467,7 @@ async def get_turfs(user: User = Depends(get_current_user)):
     return turfs
 
 @api_router.post("/turfs", response_model=Turf)
-async def create_turf(turf_data: TurfCreate, user: User = Depends(get_current_user)):
+async def create_turf(turf_data: TurfCreate, user: User = Depends(get_authorized_user)):
     """Create a new turf"""
     turf_doc = {
         "turf_id": f"turf_{uuid.uuid4().hex[:8]}",
@@ -386,7 +481,7 @@ async def create_turf(turf_data: TurfCreate, user: User = Depends(get_current_us
     return Turf(**turf_doc)
 
 @api_router.put("/turfs/{turf_id}", response_model=Turf)
-async def update_turf(turf_id: str, turf_data: TurfUpdate, user: User = Depends(get_current_user)):
+async def update_turf(turf_id: str, turf_data: TurfUpdate, user: User = Depends(get_authorized_user)):
     """Update a turf"""
     result = await db.turfs.find_one_and_update(
         {"turf_id": turf_id},
@@ -408,7 +503,7 @@ async def update_turf(turf_id: str, turf_data: TurfUpdate, user: User = Depends(
     return Turf(**turf_doc)
 
 @api_router.delete("/turfs/{turf_id}")
-async def delete_turf(turf_id: str, user: User = Depends(get_current_user)):
+async def delete_turf(turf_id: str, user: User = Depends(get_authorized_user)):
     """Delete a turf"""
     # Check if turf has bookings
     booking_count = await db.bookings.count_documents({"turf_id": turf_id})
@@ -462,7 +557,7 @@ async def get_bookings(
     turf_id: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_authorized_user)
 ):
     """Get bookings with optional filters"""
     query = {}
@@ -486,7 +581,7 @@ async def get_bookings(
     return bookings
 
 @api_router.post("/bookings", response_model=Booking)
-async def create_booking(booking_data: BookingCreate, user: User = Depends(get_current_user)):
+async def create_booking(booking_data: BookingCreate, user: User = Depends(get_authorized_user)):
     """Create a new booking with overlap validation"""
     
     # Validate time slot alignment
@@ -552,7 +647,7 @@ async def create_booking(booking_data: BookingCreate, user: User = Depends(get_c
     return Booking(**booking_doc)
 
 @api_router.put("/bookings/{booking_id}", response_model=Booking)
-async def update_booking(booking_id: str, booking_data: BookingUpdate, user: User = Depends(get_current_user)):
+async def update_booking(booking_id: str, booking_data: BookingUpdate, user: User = Depends(get_authorized_user)):
     """Update a booking"""
     existing = await db.bookings.find_one({"booking_id": booking_id}, {"_id": 0})
     if not existing:
@@ -637,7 +732,7 @@ async def update_booking(booking_id: str, booking_data: BookingUpdate, user: Use
     return Booking(**updated)
 
 @api_router.delete("/bookings/{booking_id}")
-async def delete_booking(booking_id: str, user: User = Depends(get_current_user)):
+async def delete_booking(booking_id: str, user: User = Depends(get_authorized_user)):
     """Delete a booking"""
     # Get booking data before deleting for logging
     existing = await db.bookings.find_one({"booking_id": booking_id}, {"_id": 0})
@@ -667,7 +762,7 @@ async def get_expenses(
     turf_id: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_authorized_user)
 ):
     """Get expenses with optional filters"""
     query = {}
@@ -691,7 +786,7 @@ async def get_expenses(
     return expenses
 
 @api_router.post("/expenses", response_model=Expense)
-async def create_expense(expense_data: ExpenseCreate, user: User = Depends(get_current_user)):
+async def create_expense(expense_data: ExpenseCreate, user: User = Depends(get_authorized_user)):
     """Create a new expense"""
     # Get turf name
     turf = await db.turfs.find_one({"turf_id": expense_data.turf_id}, {"_id": 0})
@@ -725,7 +820,7 @@ async def create_expense(expense_data: ExpenseCreate, user: User = Depends(get_c
     return Expense(**expense_doc)
 
 @api_router.put("/expenses/{expense_id}", response_model=Expense)
-async def update_expense(expense_id: str, expense_data: ExpenseUpdate, user: User = Depends(get_current_user)):
+async def update_expense(expense_id: str, expense_data: ExpenseUpdate, user: User = Depends(get_authorized_user)):
     """Update an expense"""
     existing = await db.expenses.find_one({"expense_id": expense_id}, {"_id": 0})
     if not existing:
@@ -769,7 +864,7 @@ async def update_expense(expense_id: str, expense_data: ExpenseUpdate, user: Use
     return Expense(**updated)
 
 @api_router.delete("/expenses/{expense_id}")
-async def delete_expense(expense_id: str, user: User = Depends(get_current_user)):
+async def delete_expense(expense_id: str, user: User = Depends(get_authorized_user)):
     """Delete an expense"""
     # Get expense data before deleting for logging
     existing = await db.expenses.find_one({"expense_id": expense_id}, {"_id": 0})
@@ -798,7 +893,7 @@ async def get_dashboard_stats(
     period: str = "monthly",  # daily, weekly, monthly, yearly
     date: Optional[str] = None,  # Reference date
     turf_id: Optional[str] = None,
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_authorized_user)
 ):
     """Get dashboard statistics"""
     if not date:
@@ -876,7 +971,7 @@ async def get_dashboard_stats(
 async def get_calendar_data(
     month: str,  # YYYY-MM format
     turf_id: Optional[str] = None,
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_authorized_user)
 ):
     """Get calendar data for a month"""
     year, month_num = map(int, month.split("-"))
@@ -922,7 +1017,7 @@ async def get_calendar_data(
 # ==================== TIME SLOTS ====================
 
 @api_router.get("/time-slots")
-async def get_time_slots(user: User = Depends(get_current_user)):
+async def get_time_slots(user: User = Depends(get_authorized_user)):
     """Get available time slot options"""
     slots = []
     for hour in range(6, 24):  # 6 AM to 11 PM
@@ -935,7 +1030,7 @@ async def get_time_slots(user: User = Depends(get_current_user)):
 async def get_available_slots(
     turf_id: str,
     date: str,
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_authorized_user)
 ):
     """Get available time slots for a turf on a specific date"""
     # Generate all possible slots
@@ -981,7 +1076,7 @@ async def get_activity_logs(
     offset: int = 0,
     entity_type: Optional[str] = None,  # booking, expense
     action: Optional[str] = None,  # create, update, delete
-    user: User = Depends(get_current_user)
+    user: User = Depends(get_authorized_user)
 ):
     """Get activity logs (immutable audit trail)"""
     query = {}
@@ -1010,7 +1105,7 @@ async def get_activity_logs(
     }
 
 @api_router.get("/activity-logs/{log_id}")
-async def get_activity_log_detail(log_id: str, user: User = Depends(get_current_user)):
+async def get_activity_log_detail(log_id: str, user: User = Depends(get_authorized_user)):
     """Get a single activity log entry"""
     log = await db.activity_logs.find_one({"log_id": log_id}, {"_id": 0})
     
@@ -1021,6 +1116,79 @@ async def get_activity_log_detail(log_id: str, user: User = Depends(get_current_
         log["timestamp"] = datetime.fromisoformat(log["timestamp"])
     
     return log
+
+# ==================== USER MANAGEMENT ENDPOINTS ====================
+
+@api_router.get("/users/authorized")
+async def get_authorized_users_list(user: User = Depends(get_authorized_user)):
+    """Get list of all authorized users"""
+    users = await db.authorized_users.find({}, {"_id": 0}).sort("added_at", 1).to_list(100)
+    
+    for u in users:
+        if isinstance(u.get("added_at"), str):
+            u["added_at"] = datetime.fromisoformat(u["added_at"])
+    
+    return {"users": users, "total": len(users)}
+
+@api_router.post("/users/authorized")
+async def add_authorized_user(
+    request_data: AddAuthorizedUserRequest,
+    user: User = Depends(get_authorized_user)
+):
+    """Add a new authorized user"""
+    email = request_data.email.lower().strip()
+    
+    # Validate email format
+    if "@" not in email or "." not in email:
+        raise HTTPException(status_code=400, detail="Invalid email format")
+    
+    # Check if already exists
+    existing = await db.authorized_users.find_one({"email": email}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email already authorized")
+    
+    # Add new authorized user
+    new_user = {
+        "email": email,
+        "added_by": user.email,
+        "added_at": datetime.now(timezone.utc).isoformat()
+    }
+    await db.authorized_users.insert_one(new_user)
+    
+    logger.info(f"Authorized user added: {email} by {user.email}")
+    
+    return {"message": "User authorized successfully", "email": email}
+
+@api_router.delete("/users/authorized/{email}")
+async def remove_authorized_user(email: str, user: User = Depends(get_authorized_user)):
+    """Remove an authorized user"""
+    email = email.lower().strip()
+    
+    # Check if user exists
+    existing = await db.authorized_users.find_one({"email": email}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Prevent removing the last user
+    count = await db.authorized_users.count_documents({})
+    if count <= 1:
+        raise HTTPException(status_code=400, detail="Cannot remove the last authorized user")
+    
+    # Prevent removing yourself
+    if email == user.email.lower():
+        raise HTTPException(status_code=400, detail="Cannot remove yourself")
+    
+    # Remove user
+    await db.authorized_users.delete_one({"email": email})
+    
+    # Also remove their sessions to revoke access immediately
+    user_doc = await db.users.find_one({"email": email}, {"_id": 0})
+    if user_doc:
+        await db.user_sessions.delete_many({"user_id": user_doc["user_id"]})
+    
+    logger.info(f"Authorized user removed: {email} by {user.email}")
+    
+    return {"message": "User removed successfully", "email": email}
 
 # ==================== ROOT ====================
 
@@ -1038,6 +1206,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize authorized users on startup"""
+    await initialize_authorized_users()
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
