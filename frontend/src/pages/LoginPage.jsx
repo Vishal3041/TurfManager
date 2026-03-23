@@ -57,22 +57,32 @@ const LoginPage = () => {
             <GoogleLogin
               onSuccess={async (credentialResponse) => {
                 try {
+                  const token = credentialResponse.credential;
+
+                  // Step 1: verify + check authorization
                   const res = await axios.post(
                     "https://turf-backend-tx2i.onrender.com/api/auth/google",
-                    {
-                      token: credentialResponse.credential,
-                    }
+                    { token }
                   );
 
-                  if (res.data.is_authorized) {
-                    navigate("/");
+                  if (!res.data.is_authorized) {
+                    alert("Access denied");
+                    return;
                   }
+
+                  // Step 2: CREATE SESSION (🔥 missing piece)
+                  await axios.post(
+                    "https://turf-backend-tx2i.onrender.com/api/auth/session",
+                    { token },
+                    { withCredentials: true }
+                  );
+
+                  navigate("/");
+
                 } catch (err) {
+                  console.error(err);
                   alert("Access denied");
                 }
-              }}
-              onError={() => {
-                console.log("Login Failed");
               }}
             />
 
